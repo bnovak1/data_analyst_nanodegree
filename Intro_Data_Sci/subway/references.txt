@@ -1,0 +1,38 @@
+	• Wrangling
+		○ MySQL :: MySQL 5.1 Reference Manual :: 3.3.4.8 Counting Rows (https://dev.mysql.com/doc/refman/5.1/en/counting-rows.html)
+		○ csv – Comma-separated value files - Python Module of the Week (http://pymotw.com/2/csv/)
+		○ Time Series / Date functionality — pandas 0.15.2 documentation (http://pandas.pydata.org/pandas-docs/stable/timeseries.html#shifting-lagging)
+		○ Python String split() Method (http://www.tutorialspoint.com/python/string_split.htm)
+		○ 8.1. datetime — Basic date and time types — Python 2.7.9 documentation (https://docs.python.org/2/library/datetime.html#datetime.datetime.strptime)
+	• Analysis
+		○ Student's t-test (http://en.wikipedia.org/wiki/Student%27s_t-test)
+		○ Welch's t test (http://en.wikipedia.org/wiki/Welch's_t_test)
+		○ scipy.stats.mannwhitneyu (http://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html)
+		○ Understanding the Mann Whitney U Test (course info)
+		○ What does dummy_units exactly mean? (https://piazza.com/class/i2ddoj5wy8i6j5?cid=17)
+		○ Using ggpolt (course info)
+		○ Are the model residuals well-behaved? (http://www.itl.nist.gov/div898/handbook/pri/section2/pri24.htm)
+		○ statsmodels.regression.linear_model.OLS (http://statsmodels.sourceforge.net/devel/generated/statsmodels.regression.linear_model.OLS.html)
+		○ which day of week given a date python (http://stackoverflow.com/questions/9847213/which-day-of-week-given-a-date-python)
+		○ Pandas | SettingWithCopyWarning (https://piazza.com/class/i2ddoj5wy8i6j5?cid=122, https://piazza.com/class/i2ddoj5wy8i6j5?cid=142)
+		○ Pandas | Rename columns (https://piazza.com/class/i2ddoj5wy8i6j5?cid=145)
+		○ numpy.argsort — NumPy v1.9 Manual (http://docs.scipy.org/doc/numpy/reference/generated/numpy.argsort.html#numpy.argsort)
+		○ python - How to import a module given the full path? - Stack Overflow (http://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path)
+		○ Logistic regression - Wikipedia, the free encyclopedia (http://en.wikipedia.org/wiki/Logistic_regression)
+		○ pandas.DataFrame.to_csv — pandas 0.15.2 documentation (http://pandas.pydata.org/pandas-docs/dev/generated/pandas.DataFrame.to_csv.html)
+		○ Residual Analysis in Regression (http://stattrek.com/regression/residual-analysis.aspx)
+	• Visualization
+		○ python - Renaming columns in pandas - Stack Overflow (http://stackoverflow.com/questions/11346283/renaming-columns-in-pandas)
+		○ numpy.histogram — NumPy v1.9 Manual (http://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html)
+		○ python - How to convert 2D float numpy array to 2D int numpy array? - Stack Overflow (http://stackoverflow.com/questions/10873824/how-to-convert-2d-float-numpy-array-to-2d-int-numpy-array)
+		○ numpy.linspace — NumPy v1.9 Manual (http://docs.scipy.org/doc/numpy/reference/generated/numpy.linspace.html#numpy.linspace)
+		○ 10 Minutes to pandas — pandas 0.15.2 documentation (http://pandas.pydata.org/pandas-docs/stable/10min.html)
+		○ geom_hline. ggplot2 0.9.3.1 (http://docs.ggplot2.org/0.9.3.1/geom_hline.html)
+		○ geom_rect. ggplot2 0.9.3.1 (http://docs.ggplot2.org/current/geom_rect.html)
+	• MapReduce
+		○ Python: Find in list - Stack Overflow (http://stackoverflow.com/questions/9542738/python-find-in-list)
+		○ python - Check if a given key already exists in a dictionary - Stack Overflow (http://stackoverflow.com/questions/1602934/check-if-a-given-key-already-exists-in-a-dictionary)
+		○ 15.7. logging — Logging facility for Python — Python 2.7.9 documentation (https://docs.python.org/2/library/logging.html)
+		○ Python String strip() Method (http://www.tutorialspoint.com/python/string_strip.htm)
+	• Report
+		○ https://github.com/ipython-contrib/IPython-notebook-extensions
