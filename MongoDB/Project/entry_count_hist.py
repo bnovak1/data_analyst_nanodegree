@@ -51,9 +51,9 @@ def plot_hist(entry_hist):
     plt.plot(num_entries[0:ind+1], percent_users_less[0:ind+1], '.-')
     
     plt.xlabel(r'Number of entries')
-    plt.xlim(-5, 185)
-    plt.axes().xaxis.set_major_locator(MultipleLocator(20))
-    plt.axes().xaxis.set_minor_locator(MultipleLocator(5))    
+    plt.xlim(-5, 350)
+    plt.axes().xaxis.set_major_locator(MultipleLocator(30))
+    plt.axes().xaxis.set_minor_locator(MultipleLocator(10))    
     
     plt.ylabel(r'\% of users with $\le$ number of entries')
     plt.ylim(10, 85)
