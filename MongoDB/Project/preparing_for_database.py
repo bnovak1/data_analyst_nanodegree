@@ -116,7 +116,6 @@ def update_street_type_name(name, street_types_expected, street_type_mapping):
     
     if not int_check(street_type) and street_type not in street_types_expected:
         name = re.sub(r'\b\S+\.?$', street_type_mapping[street_type], name)
-        print name
 
     return name
     
