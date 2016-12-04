@@ -1,4 +1,0 @@
-MongoDB documentation
-www.geonames.org/
-https://stackoverflow.com/questions/18902584/how-to-create-normal-looking-axis-labels-using-latex-in-matplotlib
-https://ipython.org/ipython-doc/1/api/generated/IPython.core.magics.pylab.html
