@@ -1,0 +1,20 @@
+1)	MongoDB documentation
+2)	GeoNames
+	http://www.geonames.org/
+3) 	How to create 'normal' looking axis labels using latex in matplotlib
+	http://stackoverflow.com/questions/18902584/how-to-create-normal-looking-axis-labels-using-latex-in-matplotlib
+4) 	Module: core.magics.pylab
+	http://ipython.org/ipython-doc/1/api/generated/IPython.core.magics.pylab.html
+5)	HTML Accent Entity Codes
+	http://symbolcodes.tlt.psu.edu/web/codehtml.html
+6)	Performing regex Queries with pymongo
+	http://stackoverflow.com/questions/3483318/performing-regex-queries-with-pymongo
+7)	pandas.DataFrame.from_dict
+	http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.from_dict.html
+8)	Pandas select row of data frame by integer index
+	http://stackoverflow.com/questions/16096627/pandas-select-row-of-data-frame-by-integer-index
+9)	Renaming columns in pandas
+	http://stackoverflow.com/questions/11346283/renaming-columns-in-pandas
+10)	pandas.DataFrame.append
+	http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.append.html
+
