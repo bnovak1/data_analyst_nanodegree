@@ -1,0 +1,258 @@
+---
+title: "Exploratory Data Analysis: White Wine Quality"
+author: "Brian Novak"
+date: "April 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+```
+
+```{r}
+nbins_hist <- function(x) {
+    npts = length(x)
+    mu <- mean(x)
+    sig <- sd(x)
+    g1 <- mean(((x - mu)/sig)^3.0)
+    sigg1 <- sqrt(6*(npts-2)/((npts+1)*(npts+3)))
+    nbins <- round(1.0 + log(npts, base=2) + log(1.0 + abs(g1)/sigg1, base=2), digits=0)
+    return(nbins)
+}
+```
+
+
+```{r}
+wine_quality_data <- read.csv('../data/wineQualityWhites.csv')
+```
+
+# Single variables
+
+For each of the 11 variables, a summary is output along with at least two histograms. There do not appear to be any options in ggplot2 for automatically estimating the number of bins, so to avoid just guessing an appropriate number I wrote a function to estimate the number based on the Doane criterion as described in the numpy.histogram documentation (https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html). The first histogram for each variable uses a number of bins determined by the Doane criterion. The second histogram uses 8 times that number in case some hidden structure in the data is covered up by using too few bins. If a variable is significantly right skewed, then a third histogram with a log scale is plotted.
+
+### Acid concentrations
+
+##### Tartaric acid concentration (fixed acidity)
+
+The distribution of tartaric acid concentration is fairly normal, with only 7 wines having a high acidity with 10 grams/liter of tartaric acid or higher.
+
+```{r}
+summary(wine_quality_data['fixed.acidity'])
+```
+```{r}
+vec <- wine_quality_data[['fixed.acidity']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Tartaric acid concentration (grams/liter)'
+
+p1 <- qplot(data=wine_quality_data, x=fixed.acidity, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=fixed.acidity, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol = 2)
+```
+
+```{r}
+nrow(subset(wine_quality_data, fixed.acidity > 10.0))
+```
+
+
+##### Acetic acid concentration (volatile acidity)
+
+The median acetic acid concentration is about 26 times less than the tartaric acid concentration, so its contribution to the acidity is relatively low. However, too much acetic acid may reduce a wine's quality rating since it will start to have a vinegar flavor. The acetic acid concentration has a much more pronounced tail on the right compared with tartaric acid. The values range over more than a factor of 10. The histogram with the log scale looks fairly normal, so the acetic acidic is approximately log normally distributed.
+
+```{r}
+summary(wine_quality_data['volatile.acidity'])
+```
+```{r}
+vec <- wine_quality_data[['volatile.acidity']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Acetic acid concentration (grams/liter)'
+
+p1 <- qplot(data=wine_quality_data, x=volatile.acidity, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=volatile.acidity, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+
+ggplot(data=wine_quality_data, aes(wine_quality_data$volatile.acidity)) + 
+    geom_histogram(bins=nbins_doane) + 
+    scale_x_log10(breaks=seq(0, round(max(vec), 1), 0.1)) + 
+    xlab(xlabel)
+```
+
+##### Citric acid concentration
+
+The citric acid concentrations are comparable to the acetic acid concentrations, but the tail on the right is even longer and there are apparently 19 wines with no measurable citric acid. The histogram on the log scale does not look more normal than the original, but is instead left skewed.
+
+```{r}
+summary(wine_quality_data['citric.acid'])
+```
+```{r}
+vec <- wine_quality_data[['citric.acid']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Citric acid concentration (grams/liter)'
+
+p1 <- qplot(data=wine_quality_data, x=citric.acid, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=citric.acid, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+
+ggplot(data=wine_quality_data, aes(wine_quality_data$citric.acid)) + 
+    geom_histogram(bins=nbins_doane) + 
+    scale_x_log10(minor_breaks=seq(0, round(max(vec), 1), 0.1)) + xlab(xlabel)
+```
+
+```{r}
+nrow(subset(wine_quality_data, citric.acid==0))
+```
+
+### Sugar concentration
+
+The sugar concentration has several peaks which might be due to different types of grapes. This cannot be seen using the Doane criterion for the number of bins, but is seen with 8 times more bins and is easily seen using a log scale. There is a large peak at a concentration of about 1.5 grams/liter and smaller peaks around 5, 8, and 14 grams/liter. Based on the variable description, wines with greater than 45 grams/liter of sugar are considered sweet. There is only 1 wine in this data set which would be considered to be sweet, therefore this data set would not be useful for building a model to predict the quality of sweet wines. Also of possible concern if trying to use any model built from this data set for prediction is that the variable description says that having a sugar concentration of less than 1 gram/liter is rare, but 77 or 1.57% of the wines in this data set have those concentrations. This seems like more than rare, but of course the term "rare" is subjective.
+
+```{r}
+summary(wine_quality_data['residual.sugar'])
+```
+```{r}
+vec <- wine_quality_data[['residual.sugar']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Sugar concentration (grams/liter)'
+
+p1 <- qplot(data=wine_quality_data, x=residual.sugar, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=residual.sugar, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+
+ggplot(data=wine_quality_data, aes(wine_quality_data$residual.sugar)) + 
+    geom_histogram(bins=4*nbins_doane) + 
+    scale_x_log10(minor_breaks=seq(0, round(max(vec), 1), 1)) + xlab(xlabel)
+```
+
+```{r}
+nrow(subset(wine_quality_data, residual.sugar>45))
+nrow(subset(wine_quality_data, residual.sugar<1))
+100*nrow(subset(wine_quality_data, residual.sugar<1))/nrow(wine_quality_data)
+```
+
+### Chloride concentration
+
+The chloride ions in wine are primarily due to sodium chloride, and most wines in this data set have a concentration of less than 0.1 grams/liter. However, the distribution has a very long tail, with concentrations as high as 0.346 grams/liter. All of the chloride concentrations are low. For comparison, fresh water generally has a concentration of around 0.1 grams/liter of sodium chloride (https://www.engineeringtoolbox.com/water-salinity-d_1251.html).
+```{r}
+summary(wine_quality_data['chlorides'])
+```
+```{r}
+vec <- wine_quality_data[['chlorides']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Chloride concentration (grams/liter)'
+
+p1 <- qplot(data=wine_quality_data, x=chlorides, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=chlorides, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+
+ggplot(data=wine_quality_data, aes(wine_quality_data$chlorides)) + 
+    geom_histogram(bins=nbins_doane) + 
+    scale_x_log10(minor_breaks=seq(0, round(max(vec)+0.01, 1), 0.01)) + xlab(xlabel)
+```
+```{r}
+max(wine_quality_data$chlorides)
+```
+
+
+### Sulfur compounds
+
+#### Free sulfur dioxide
+```{r}
+summary(wine_quality_data['free.sulfur.dioxide'])
+```
+```{r}
+vec <- wine_quality_data[['free.sulfur.dioxide']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Free sulfur dioxide concentration (milligrams/liter)'
+
+p1 <- qplot(data=wine_quality_data, x=free.sulfur.dioxide, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=free.sulfur.dioxide, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+
+ggplot(data=wine_quality_data, aes(wine_quality_data$free.sulfur.dioxide)) + 
+    geom_histogram(bins=nbins_doane) + 
+    scale_x_log10(minor_breaks=seq(0, round(max(vec)+100, 0), 20)) + xlab(xlabel)
+```
+
+#### Total sulfur dioxide
+```{r}
+summary(wine_quality_data['total.sulfur.dioxide'])
+```
+```{r}
+vec <- wine_quality_data[['total.sulfur.dioxide']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Total sulfur dioxide concentration (milligrams/liter)'
+
+p1 <- qplot(data=wine_quality_data, x=total.sulfur.dioxide, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=total.sulfur.dioxide, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+```
+
+#### Potassium sulphate
+```{r}
+summary(wine_quality_data['sulphates'])
+```
+```{r}
+vec <- wine_quality_data[['sulphates']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Potassium sulfate concentration (milligrams/liter)'
+
+p1 <- qplot(data=wine_quality_data, x=sulphates*1000, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=sulphates*1000, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+
+ggplot(data=wine_quality_data, aes(wine_quality_data$sulphates*1000)) + 
+    geom_histogram(bins=nbins_doane) + 
+    scale_x_log10(breaks=seq(200, 1200, 100)) + xlab(xlabel)
+```
+
+### pH
+```{r}
+summary(wine_quality_data['pH'])
+```
+```{r}
+vec <- wine_quality_data[['pH']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'pH'
+
+p1 <- qplot(data=wine_quality_data, x=pH, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=pH, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+```
+### Alcohol
+```{r}
+summary(wine_quality_data['alcohol'])
+```
+```{r}
+vec <- wine_quality_data[['alcohol']]
+nbins_doane <- nbins_hist(vec)
+xlabel <- 'Alcohol volume %'
+
+p1 <- qplot(data=wine_quality_data, x=alcohol, bins=nbins_doane, xlab=xlabel)
+p2 <- qplot(data=wine_quality_data, x=alcohol, bins=8*nbins_doane, xlab=xlabel)
+grid.arrange(p1, p2, ncol=2)
+
+ggplot(data=wine_quality_data, aes(wine_quality_data$alcohol)) + 
+    geom_histogram(bins=nbins_doane) + scale_x_log10(breaks=seq(7, 15, 1)) + xlab(xlabel)
+```
+
+### Quality
+```{r}
+summary(wine_quality_data['quality'])
+```
+```{r}
+xlabel <- 'Quality'
+
+qplot(data=wine_quality_data, x=quality, bins=10, xlab=xlabel, breaks=seq(2,10))
+```
+# Two variables
+
+# Multiple variables
+
+# Final Plots and Summary
+
+# Conclusions
