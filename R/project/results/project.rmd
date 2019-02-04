@@ -1,0 +1,278 @@
+---
+title: "Exploratory Data Analysis: White Wine Quality"
+author: "Brian Novak"
+date: "February 3, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(rcompanion)
+```
+
+```{r}
+
+# Choose number of histogram bins based on Doane criterion
+nbins_hist <- function(x) {
+    
+    npts = length(x)
+    mu <- mean(x)
+    sig <- sd(x)
+    g1 <- mean(((x - mu)/sig)^3.0)
+    sigg1 <- sqrt(6*(npts-2)/((npts+1)*(npts+3)))
+    nbins <- round(1.0 + log(npts, base=2) + log(1.0 + abs(g1)/sigg1, base=2), digits=0)
+    
+    return(nbins)
+    
+}
+
+# Single variable summary and histograms
+histograms <- function(df, col, aesthetic, label, scale_factor=1) {
+    
+    print(summary(wine_quality_data[col]*scale_factor))
+
+    vec <- wine_quality_data[[col]]
+    nbins <- nbins_hist(vec)
+    
+    p1 <- ggplot(df, aesthetic) + 
+        geom_histogram(bins=nbins) + 
+        xlab(label)
+    p2 <- ggplot(df, aesthetic) + 
+        geom_histogram(bins=8*nbins) + 
+        xlab(label)
+    grid.arrange(p1, p2, ncol=2)
+    
+    ggplot(df, aesthetic) + 
+        geom_histogram(bins=nbins) + 
+        scale_x_log10() + 
+        xlab(label)
+}
+
+normality_tests <- function(data) {
+
+    print('')
+    print('Shapiro-Wilks normality test p-values')
+    print('')
+    print(c('Data:', shapiro.test(data)$p.value))
+    print(c('Log of Data:', shapiro.test(log(data[data>0]))$p.value))
+
+}
+          
+```
+
+```{r}
+wine_quality_data <- read.csv('../input/wineQualityWhites.csv')
+wine_quality_data$X <- NULL
+str(wine_quality_data)
+```
+
+# Single variables
+
+For each of the 11 variables, a summary is output along with three histograms in most cases. There do not appear to be any options in ggplot2 for automatically estimating the number of bins for histograms, so to avoid just guessing an appropriate number I wrote a function to estimate the number based on the Doane criterion as described in the numpy.histogram documentation (https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html). The first histogram for each variable uses a number of bins determined by the Doane criterion. The second histogram uses 8 times that number in case some hidden structure in the data is covered up by using too few bins. In case a variable is significantly right skewed, a third histogram with a log scale is plotted to see if the data appear to be more symmetrically distributed on a log scale. Volumes are reported as liters or cubic centimeters (cc) instead of cubic decimeters given in the variable description (1 liter = 1 cubic decimeter).
+
+### Acid concentrations
+
+##### Tartaric acid concentration (fixed acidity)
+
+The distribution of tartaric acid concentration is fairly symmetric, with only 7 wines having a high acidity with 10 grams/liter of tartaric acid or higher.
+
+```{r}
+histograms(wine_quality_data, 'fixed.acidity', aes(fixed.acidity), 
+           'Tartaric acid concentration (grams/liter)')
+normality_tests(wine_quality_data$fixed.acidity)
+```
+
+```{r}
+nrow(subset(wine_quality_data, fixed.acidity > 10.0))
+```
+
+
+##### Acetic acid concentration (volatile acidity)
+
+The median acetic acid concentration is about 26 times less than the tartaric acid concentration, so its contribution to the acidity is relatively low. However, too much acetic acid may reduce a wine's quality rating since it will start to have a vinegar flavor. The acetic acid concentration has a much more pronounced tail on the right compared with tartaric acid. The values range over more than a factor of 10. The histogram with the log scale looks fairly symmetric.
+
+```{r}
+histograms(wine_quality_data, 'volatile.acidity', aes(volatile.acidity),
+           'Acetic acid concentration (grams/liter)')
+normality_tests(wine_quality_data$volatile.acidity)
+```
+
+##### Citric acid concentration
+
+The citric acid concentrations are comparable to the acetic acid concentrations, but the tail on the right is even longer and there are apparently 19 wines with no measurable citric acid. The histogram on the log scale does not look more symmetric than the original, but is instead left skewed.
+
+```{r}
+histograms(wine_quality_data, 'citric.acid', aes(citric.acid),
+           'Citric acid concentration (grams/liter)')
+normality_tests(wine_quality_data$citric.acid)
+```
+
+```{r}
+nrow(subset(wine_quality_data, citric.acid==0))
+```
+
+### Sugar concentration
+
+The sugar concentration has several peaks. This cannot be seen using the Doane criterion for the number of bins, but is seen with 8 times more bins and is easily seen using a log scale with 4 times more bins. There is a large peak at a concentration of about 1.5 grams/liter and smaller peaks around 5, 8, and 14 grams/liter. Based on the variable description, wines with greater than 45 grams/liter of sugar are considered sweet. There is only 1 wine in this data set which would be considered to be sweet, therefore this data set would not be useful for building a model to predict the quality of sweet wines. Also of possible concern if trying to use any model built from this data set for prediction is that the variable description says that having a sugar concentration of less than 1 gram/liter is rare, but 77 or 1.57% of the wines in this data set have those concentrations. This seems like more than rare, but the term "rare" is subjective.
+
+```{r}
+histograms(wine_quality_data, 'residual.sugar', aes(residual.sugar), 
+           'Sugar concentration (grams/liter)')
+
+vec <- wine_quality_data[['residual.sugar']]
+nbins <- nbins_hist(vec)
+ggplot(data=wine_quality_data, aes(residual.sugar)) + 
+                               geom_histogram(bins=4*nbins) + 
+                               scale_x_log10(breaks=seq(-1, 17, 2)) + 
+                               xlab('Sugar concentration (grams/liter)')
+
+normality_tests(wine_quality_data$residual.sugar)
+```
+
+```{r}
+nrow(subset(wine_quality_data, residual.sugar>45))
+nrow(subset(wine_quality_data, residual.sugar<1))
+100*nrow(subset(wine_quality_data, residual.sugar<1))/nrow(wine_quality_data)
+```
+
+### Chloride concentration
+
+The chloride ions in wine are primarily due to sodium chloride, and most wines in this data set have a concentration of less than 0.1 grams/liter. However, the distribution has a very long tail, with concentrations as high as 0.346 grams/liter. All of the chloride concentrations are low. For comparison, fresh water generally has a concentration of around 0.1 grams/liter of sodium chloride (https://www.engineeringtoolbox.com/water-salinity-d_1251.html).
+
+```{r}
+histograms(wine_quality_data, 'chlorides', aes(chlorides), 
+           'Chloride concentration (grams/liter)')
+normality_tests(wine_quality_data$chlorides)
+```
+
+### Sulfur compounds
+
+#### Free sulfur dioxide
+
+The data description says that free sulfur dioxide does not influence the smell or taste of wine until the concentration exceeds about 50 milligrams/liter. In this data set, 932 or about 19% of the wines have free sulfur dioxide concentrations above this threshold with the highest concentration being 289 milligrams/liter. This suggests that the correlation between free sulfur dioxide concentration and quality should be investigated on two subsets of the data with free sulfur dioxide concentrations above and below the threshold.
+
+```{r}
+histograms(wine_quality_data, 'free.sulfur.dioxide', aes(free.sulfur.dioxide), 
+           'Free sulfur dioxide concentration (milligrams/liter)')
+normality_tests(wine_quality_data$free.sulfur.dioxide)
+```
+
+```{r}
+nhigh_so2 <- nrow(subset(wine_quality_data, free.sulfur.dioxide >= 50))
+nhigh_so2
+100*nhigh_so2/nrow(wine_quality_data)
+```
+
+#### Total sulfur dioxide
+
+The total sulfur dioxide concentration distribution has a similar shape to the free sulfur dioxide concentration distribution, but the mean is about 100 milligrams/liter higher than the mean for free sulfur dioxide concentration. This means that the majority of the sulfur dioxide is in the bound form; about 74% on average.
+
+```{r}
+histograms(wine_quality_data, 'total.sulfur.dioxide', aes(total.sulfur.dioxide), 
+           'Total sulfur dioxide concentration (milligrams/liter)')
+normality_tests(wine_quality_data$total.sulfur.dioxide)
+```
+
+```{r}
+100*mean((wine_quality_data$total.sulfur.dioxide - wine_quality_data$free.sulfur.dioxide)/wine_quality_data$total.sulfur.dioxide)
+```
+
+
+#### Potassium sulphate
+
+The potassium sulfate concentration ranges from about 200 to 1100 mg/L and is approximately log normally distributed. The concentration is converted to mg/L for better comparison with the sulfur dioxide concentrations. The mean potassium sulfate concentration of 489.8 mg/L is several times larger than the mean free sulfur dioxide (35.31 mg/L) and mean total sulfur dioxide (138.4 mg/L) concentrations.
+```{r}
+histograms(wine_quality_data, 'sulphates', aes(sulphates), 
+           'Potassium sulfate concentration (milligrams/liter)', 1000)
+normality_tests(wine_quality_data$sulphates)
+```
+
+### pH
+
+The pH is approximately normally distributed with a mean of about 3.2. The Wikipedia article on acids in wine (https://en.wikipedia.org/wiki/Acids_in_wine) states that wine pH is usually between 2.9 and 3.9 so the distribution is reasonble. However, there are 70 (1.4%) wines with a pH between 2.7 and 2.9.
+
+```{r}
+histograms(wine_quality_data, 'pH', aes(pH), 'pH')
+normality_tests(wine_quality_data$pH)
+```
+
+```{r}
+nlow_pH <- nrow(subset(wine_quality_data, pH < 2.9))
+nlow_pH
+100*nlow_pH/nrow(wine_quality_data)
+```
+
+### Alcohol
+The distribution of alcohol content is right skewed, which is consistent with a lower bound. There is a minimum alcohol content required to call a drink wine. The distribution is not log normally distributed. The mean is about 10.5% and the max is 14.2%.
+
+```{r}
+histograms(wine_quality_data, 'alcohol', aes(alcohol), 'Alcohol volume %')
+normality_tests(wine_quality_data$alcohol)
+```
+
+### Density
+
+The densities are narrowly distributed and have a mean slightly less than the density of water which is expected since alcohol lowers the density. The distribution appears to be approximately normal, but there are some outliers with densities of around 1.01 and 1.04 g/cc. These measurements are suspect since they are significantly larger than other measurements and it is unlikely that the density of a wine is significantly higher than water.
+
+```{r}
+histograms(wine_quality_data, 'density', aes(density), 'Density (g/cc)')
+normality_tests(wine_quality_data$density)
+```
+
+### Quality
+
+Quality is restricted to integers between 0 and 10, so the histogram is plotted with a bin width of 1. The minimum quality is 3 and the maximum quality is 9. Both the median and the mode are 6.
+
+```{r}
+summary(wine_quality_data['quality'])
+
+qplot(data=wine_quality_data, x=quality, binwidth=1, xlab='Quality')
+```
+
+# Single variable summary
+
+## Data structure
+
+This data set consists of quality scores for 4898 Portuguese white wines. Also included are 10 measurements of the concentrations of various chemical species in the wines and the densities of the wines which might be correlated with the quality scores. Those concentrations are of tartaric acid, acetic acid, citric acid, sugar, chloride, free sulfur dioxide, total sulfur dioxide, potassium sulfate, pH, and alcohol.
+
+## Distributions of variables and potential outliers
+
+None of the distributions or the distributions of logarithms of the variables are normal based on the Shapiro-Wilks test. However, the distributions of tartaric acid concentration, total sulfur dioxide concentration, and density appear to be approximately symmetric. After a log transformation, the distributions of acetic acid concentration, potassium sulfate, and pH appear to be approximately symmetric. Neither the untransformed or log transformed distributions for citric acid concentration, sugar concentration, chloride concentration, free sulfur dioxide concentration, or alcohol concentration appear to be symmetric. The sugar concentration distribution is multimodal. Transformations other than the logarithm were not tried.
+
+There are some outliers and atypical distributions which may be of concern and taken into account in later analysis. The density data appears to have a few outliers with unrealistically high densities which might need to discarded. There are 19 wines which have a reported citric acid concentration of zero. It is unlikely that the concentrations are actually zero, instead they are probably just below the detection limit. For some analysis, it might be better to exclude these wines. Only free sulfur dioxide concentrations above about 50 mg/L affect the smell and taste of a wine. Only 19% of the wines have free sulfur dioxide concentrations above this threshold. When considering correlation of free sulfur dioxide concentration with quality, it would be best to split the data into two groups, one below and one above the threshold concentration. The reason for the multimodal distribution of sugar concentration is not known. Perhaps this is related to different classes of wines with different typical sugar concentrations that are targets of producers. However, without other data there is not really much basis for segmenting the data based on sugar concentration during analysis. There is only one wine in the data set which is considered sweet (sugar concentration > 45 g/L), so this data set could not be used to build a model which would predict the quality of sweet wines. There are also a relatively large number of wines, 70, with pH values outside the typical range of 2.9-3.9. This could be a problem, if trying to use only this data set to create a general model for predicting wine quality.
+
+## Importance of measurements for determining quality score based on a support vector machine model
+
+Cortez et al.[1] reported the importance of each measurment in determining the quality scored based on a support vector machine model. The order of the importances was potassium sulfate > alcohol > sugar > citric acid > total sulfur dioxide > free sulfur dioxide > acetic acid > density > pH > chloride > tartaric acid. None of the concentrations appear to have a negligible effect, with the smallest effect being about 2.5% and the largest being about 20%. However, many of the measurements are expected to be correlated due to chemical considerations. It also seems unlikely that the density by itself would have much effect on the quality score, and the effect seen is likely due to its correlations with other variables. The correlations are investigated in the next section.
+
+[1] Cortez, P.; Cerdeira, A.; Almeida, F.; Matos, T.; Reis, J. Modeling Wine Preferences by Data Mining from Physicochemical Properties. Decision Support Systems 2009, 47 (4), 547-553. https://doi.org/10.1016/j.dss.2009.05.016.
+
+# Two variables
+
+There are expected to be correlations between sulphate concentration, sulfur dioxide concentrations, and pH; and also between density, alcohol concentration, and sugar concentration. 
+```{r}
+names(wine_quality_data)
+```
+
+```{r}
+r <- round(cor(wine_quality_data, method="pearson"), 3)
+rho <- round(cor(wine_quality_data, method="spearman"), 3)
+
+ut <- upper.tri(r)
+r_df <- data.frame(
+    row = rownames(r)[row(r)[ut]],
+    column = rownames(r)[col(r)[ut]],
+    r = (r)[ut],
+    rho = (rho)[ut])
+rho
+```
+
+
+# Multiple variables
+
+# Final Plots and Summary
+
+# Conclusions
