@@ -11,6 +11,7 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 library(rcompanion)
+library(EnvStats)
 ```
 
 ```{r}
@@ -253,6 +254,20 @@ Cortez et al.[1] reported the importance of each measurment in determining the q
 # Two variables
 
 There are expected to be correlations between sulphate concentration, sulfur dioxide concentrations, and pH; and also between density, alcohol concentration, and sugar concentration. 
+
+## Remove outliers
+
+Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner's test and removed. This test assumes the data are from a normal distribution, so first a transformation is done using Tukey's Ladder of Powers to make the data more normal.
+
+```{r}
+T_tuk = transformTukey(wine_quality_data$density, plotit=FALSE)
+rosner = rosnerTest(T_tuk)
+names(rosner)
+rosner$n.outliers
+rosner$all.stats$Obs.Num
+```
+
+
 ```{r}
 names(wine_quality_data)
 ```

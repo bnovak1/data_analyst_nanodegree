@@ -443,6 +443,22 @@ $(document).ready(function () {
 <div id="two-variables" class="section level1">
 <h1>Two variables</h1>
 <p>There are expected to be correlations between sulphate concentration, sulfur dioxide concentrations, and pH; and also between density, alcohol concentration, and sugar concentration.</p>
+<div id="remove-outliers" class="section level2">
+<h2>Remove outliers</h2>
+<p>Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner’s test and removed. This test assumes the data are from a normal distribution, so first a transformation is done using Tukey’s Ladder of Powers to make the data more normal.</p>
+<pre><code>## 
+##   lambda      W Shapiro.p.value
+## 1    -10 0.9692       3.412e-31
+## 
+## if (lambda &gt;  0){TRANS = x ^ lambda} 
+## if (lambda == 0){TRANS = log(x)} 
+## if (lambda &lt;  0){TRANS = -1 * x ^ lambda}</code></pre>
+<pre><code>##  [1] &quot;distribution&quot; &quot;statistic&quot;    &quot;sample.size&quot;  &quot;parameters&quot;  
+##  [5] &quot;alpha&quot;        &quot;crit.value&quot;   &quot;n.outliers&quot;   &quot;alternative&quot; 
+##  [9] &quot;method&quot;       &quot;data&quot;         &quot;data.name&quot;    &quot;bad.obs&quot;     
+## [13] &quot;all.stats&quot;</code></pre>
+<pre><code>## [1] 3</code></pre>
+<pre><code>## [1] 2782 1654 1664</code></pre>
 <pre><code>##  [1] &quot;fixed.acidity&quot;        &quot;volatile.acidity&quot;     &quot;citric.acid&quot;         
 ##  [4] &quot;residual.sugar&quot;       &quot;chlorides&quot;            &quot;free.sulfur.dioxide&quot; 
 ##  [7] &quot;total.sulfur.dioxide&quot; &quot;density&quot;              &quot;pH&quot;                  
@@ -499,6 +515,7 @@ $(document).ready(function () {
 ## sulphates              0.033
 ## alcohol                0.440
 ## quality                1.000</code></pre>
+</div>
 </div>
 <div id="multiple-variables" class="section level1">
 <h1>Multiple variables</h1>
