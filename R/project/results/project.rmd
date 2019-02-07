@@ -62,15 +62,15 @@ normality_tests <- function(data) {
 
 }
 
-outliers <- function(df, label) {
+outliers <- function(df, label, powerstart=-10, powerend=10, tukey_quiet=TRUE) {
     
     x <- df[[label]]
-    x_t <- transformTukey(x, plotit=FALSE, quiet=TRUE)
+    x_t <- transformTukey(x, start=powerstart, end=powerend, plotit=FALSE, quiet=tukey_quiet)
     rosner <- rosnerTest(x_t, k=10)
     outliers <- subset(rosner$all.stats$Obs.Num, rosner$all.stats$Outlier == TRUE)
     noutliers <- length(outliers)
     
-    cat('Number of outliers for', label, ':', noutliers)
+    cat('Number of outliers for', label, ':', noutliers, '\n')
     
     if (length(outliers) > 0) {
         boxplot(x_t)
@@ -277,11 +277,18 @@ There are expected to be correlations between sulphate concentration, sulfur dio
 
 ## Remove outliers
 
-Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner's test and removed. This test assumes the data are from a normal distribution, so first a transformation is done using Tukey's Ladder of Powers to make the data more normal.
+Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner's test and removed before looking at correlations between two variables. Rosner's test assumes the data are from a normal distribution, so first a transformation is done using Tukey's Ladder of Powers to make the data more normal. For variables with outliers, box plots are created.
 
 
 ```{r}
-l <- outliers(wine_quality_data, "density")
+outlierlist <- c()
+for (i in colnames(wine_quality_data)){
+   o <- outliers(wine_quality_data, i, -66, 1)
+   outlierlist <- union(outlierlist, o)
+}
+```
+```{r}
+length(outlierlist)
 ```
 
 
