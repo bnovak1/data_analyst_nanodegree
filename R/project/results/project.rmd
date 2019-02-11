@@ -1,7 +1,7 @@
 ---
 title: "Exploratory Data Analysis: White Wine Quality"
 author: "Brian Novak"
-date: "February 4, 2017"
+date: "February 10, 2017"
 output: html_document
 ---
 
@@ -11,11 +11,10 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 library(rcompanion)
-library(EnvStats)
+suppressMessages(library(EnvStats))
 ```
 
 ```{r}
-
 # Choose number of histogram bins based on Doane criterion
 nbins_hist <- function(x) {
     
@@ -52,6 +51,7 @@ histograms <- function(df, col, aesthetic, label, scale_factor=1) {
         xlab(label)
 }
 
+
 normality_tests <- function(data) {
 
     print('')
@@ -62,23 +62,45 @@ normality_tests <- function(data) {
 
 }
 
-outliers <- function(df, label, powerstart=-10, powerend=10, tukey_quiet=TRUE) {
+
+transform_data <- function(df, powerstart=-10, powerend=10, tukey_quiet=TRUE) {
+
+    df_trans <- df
     
-    x <- df[[label]]
-    x_t <- transformTukey(x, start=powerstart, end=powerend, plotit=FALSE, quiet=tukey_quiet)
-    rosner <- rosnerTest(x_t, k=10)
-    outliers <- subset(rosner$all.stats$Obs.Num, rosner$all.stats$Outlier == TRUE)
-    noutliers <- length(outliers)
+    for (i in colnames(df)) {
+        if (! tukey_quiet) {
+            print(i)
+        }
+        df_trans[i] <- transformTukey(df[[i]], start=powerstart, end=powerend, 
+                                      plotit=FALSE, quiet=tukey_quiet)
+    }
     
-    cat('Number of outliers for', label, ':', noutliers, '\n')
+    return(df_trans)
+
+} 
+
+
+outliers <- function(df) {
     
-    if (length(outliers) > 0) {
-        boxplot(x_t)
-        title(label)
+    df_trans <- transform_data(df)
+    
+    for (nm in colnames(df)) {
+        
+        rosner <- rosnerTest(df_trans[[nm]], k=10)
+        outliers <- subset(rosner$all.stats$Obs.Num, rosner$all.stats$Outlier == TRUE)
+        noutliers <- length(outliers)
+    
+        cat('Number of outliers for', nm, ':', noutliers, '\n')
+    
+        if (length(outliers) > 0) {
+            boxplot(df_trans[[nm]])
+            title(nm)
+            df[[nm]][outliers] <- NA
+        }
         
     }
     
-    return(outliers)
+    return(df)
     
 }
 
@@ -87,7 +109,6 @@ outliers <- function(df, label, powerstart=-10, powerend=10, tukey_quiet=TRUE) {
 ```{r}
 wine_quality_data <- read.csv('../input/wineQualityWhites.csv')
 wine_quality_data$X <- NULL
-str(wine_quality_data)
 ```
 
 # Single variables
@@ -123,7 +144,7 @@ normality_tests(wine_quality_data$volatile.acidity)
 
 ##### Citric acid concentration
 
-The citric acid concentrations are comparable to the acetic acid concentrations, but the tail on the right is even longer and there are apparently 19 wines with no measurable citric acid. The histogram on the log scale does not look more symmetric than the original, but is instead left skewed.
+The citric acid concentrations are comparable to the acetic acid concentrations, but the tail on the right is even longer and there are apparently 19 wines with either no measurable citric acid or citric acid concentration was not measured for those wines. The histogram on the log scale does not look more symmetric than the original, but is instead left skewed.
 
 ```{r}
 histograms(wine_quality_data, 'citric.acid', aes(citric.acid),
@@ -263,7 +284,7 @@ This data set consists of quality scores for 4898 Portuguese white wines. Also i
 
 None of the distributions or the distributions of logarithms of the variables are normal based on the Shapiro-Wilks test. However, the distributions of tartaric acid concentration, total sulfur dioxide concentration, and density appear to be approximately symmetric. After a log transformation, the distributions of acetic acid concentration, potassium sulfate, and pH appear to be approximately symmetric. Neither the untransformed or log transformed distributions for citric acid concentration, sugar concentration, chloride concentration, free sulfur dioxide concentration, or alcohol concentration appear to be symmetric. The sugar concentration distribution is multimodal. Transformations other than the logarithm were not tried.
 
-There are some outliers and atypical distributions which may be of concern and taken into account in later analysis. The density data appears to have a few outliers with unrealistically high densities which might need to discarded. There are 19 wines which have a reported citric acid concentration of zero. It is unlikely that the concentrations are actually zero, instead they are probably just below the detection limit. For some analysis, it might be better to exclude these wines. Only free sulfur dioxide concentrations above about 50 mg/L affect the smell and taste of a wine. Only 19% of the wines have free sulfur dioxide concentrations above this threshold. When considering correlation of free sulfur dioxide concentration with quality, it would be best to split the data into two groups, one below and one above the threshold concentration. The reason for the multimodal distribution of sugar concentration is not known. Perhaps this is related to different classes of wines with different typical sugar concentrations that are targets of producers. However, without other data there is not really much basis for segmenting the data based on sugar concentration during analysis. There is only one wine in the data set which is considered sweet (sugar concentration > 45 g/L), so this data set could not be used to build a model which would predict the quality of sweet wines. There are also a relatively large number of wines, 70, with pH values outside the typical range of 2.9-3.9. This could be a problem, if trying to use only this data set to create a general model for predicting wine quality.
+There are some outliers and atypical distributions which may be of concern and taken into account in later analysis. The density data appears to have a few outliers with unrealistically high densities which might need to discarded. There are 19 wines which have a reported citric acid concentration of zero. It is unlikely that the concentrations are actually zero. For some analysis, it might be better to exclude these wines. Only free sulfur dioxide concentrations above about 50 mg/L affect the smell and taste of a wine. Only 19% of the wines have free sulfur dioxide concentrations above this threshold. When considering correlation of free sulfur dioxide concentration with quality, it would be best to split the data into two groups, one below and one above the threshold concentration. The reason for the multimodal distribution of sugar concentration is not known. Perhaps this is related to different classes of wines with different typical sugar concentrations that are targets of producers. However, without other data there is not really much basis for segmenting the data based on sugar concentration during analysis. There is only one wine in the data set which is considered sweet (sugar concentration > 45 g/L), so this data set could not be used to build a model which would predict the quality of sweet wines. There are also a relatively large number of wines, 70, with pH values outside the typical range of 2.9-3.9. This could be a problem if trying to use only this data set to create a general model for predicting wine quality.
 
 ## Importance of measurements for determining quality score based on a support vector machine model
 
@@ -277,20 +298,19 @@ There are expected to be correlations between sulphate concentration, sulfur dio
 
 ## Remove outliers
 
-Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner's test and removed before looking at correlations between two variables. Rosner's test assumes the data are from a normal distribution, so first a transformation is done using Tukey's Ladder of Powers to make the data more normal. For variables with outliers, box plots are created.
-
+Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner's test and changed to NA before looking at correlations between two variables. Rosner's test assumes the data are from a normal distribution, so first a transformation is done using Tukey's Ladder of Powers to make the data more normal. For variables with identified outliers, box plots of the transformed variables are created.
 
 ```{r}
-outlierlist <- c()
-for (i in colnames(wine_quality_data)){
-   o <- outliers(wine_quality_data, i, -66, 1)
-   outlierlist <- union(outlierlist, o)
-}
-```
-```{r}
-length(outlierlist)
+wine_quality_data_no_outlier <- outliers(wine_quality_data)
 ```
 
+```{r}
+wine_quality_data_no_outlier <- outliers(wine_quality_data_no_outlier)
+```
+
+```{r}
+wine_quality_data_no_outlier <- outliers(wine_quality_data_no_outlier)
+```
 
 ```{r}
 names(wine_quality_data)
