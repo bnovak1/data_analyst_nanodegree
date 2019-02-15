@@ -298,27 +298,48 @@ There are expected to be correlations between sulphate concentration, sulfur dio
 
 ## Remove outliers
 
-Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner's test and changed to NA before looking at correlations between two variables. Rosner's test assumes the data are from a normal distribution, so first a transformation is done using Tukey's Ladder of Powers to make the data more normal. For variables with identified outliers, box plots of the transformed variables are created.
+Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner's test and changed to NA before looking at correlations between two variables. Rosner's test assumes the data are from a normal distribution, so first a transformation is done using Tukey's Ladder of Powers to make the data more normal. For variables with identified outliers, box plots of the transformed variables are created. For calculating correlations, the outliers are just blindly removed by replacing the values with NA. For creating a model, there should probably be a more careful consideration of whether or not values are really outliers.
 
 ```{r}
 wine_quality_data_no_outlier <- outliers(wine_quality_data)
 ```
 
-```{r}
-wine_quality_data_no_outlier <- outliers(wine_quality_data_no_outlier)
-```
+After running Rosner's test on each variable in the data frame once, 23 outliers were found. Since the outliers may affect the data transformation, multiple iterations are performed with the data input to the next iteration being the data with outliers removed from the previous iteration.
 
 ```{r}
 wine_quality_data_no_outlier <- outliers(wine_quality_data_no_outlier)
 ```
 
-```{r}
-names(wine_quality_data)
-```
+After the second iteration, 6 more outliers are identified.
+
 
 ```{r}
-r <- round(cor(wine_quality_data, method="pearson"), 3)
-rho <- round(cor(wine_quality_data, method="spearman"), 3)
+wine_quality_data_no_outlier <- outliers(wine_quality_data_no_outlier)
+```
+
+After the third iteration, no more outliers are identified.
+
+```{r}
+sum(wine_quality_data_no_outlier[['citric.acid']] == 0, na.rm=TRUE)
+```
+
+Rosner's test did not identify the 19 citric acid concentrations that are zero as outliers. Since it seems physically unrealistic to have a concentration of exactly zero, these points are also changed to NA for the purpose of calculating correlations.
+
+```{r}
+ind <- wine_quality_data_no_outlier$citric.acid == 0
+wine_quality_data_no_outlier$citric.acid[ind] = NA
+sum(wine_quality_data_no_outlier[['citric.acid']] == 0, na.rm=TRUE)
+```
+
+## Correlations
+
+Pearson correlations and Spearman rank correlations are calculated using transformed data after removing outliers. Since the Pearson correlation assumes data is normally distributed, again the data is transformed using Tukey's ladder of powers. The correlations are split into groups with weakly correlated variables having correlation magnitudes between 0.1 and 0.3, moderately correlated variables having magnitudes between 0.3 and 0.5, and strongly correlated variables having magnitudes greater than 0.5. Pairs of variables with correlation magnitudes less than 0.1 are not looked at further.
+
+```{r}
+wine_quality_data_trans <- transform_data(wine_quality_data_no_outlier)
+
+r <- round(cor(wine_quality_data_trans, method="pearson", use="pairwise.complete.obs"), 3)
+rho <- round(cor(wine_quality_data_trans, method="spearman", use="pairwise.complete.obs"), 3)
 
 ut <- upper.tri(r)
 r_df <- data.frame(
@@ -326,7 +347,22 @@ r_df <- data.frame(
     column = rownames(r)[col(r)[ut]],
     r = (r)[ut],
     rho = (rho)[ut])
-rho
+```
+
+```{r}
+ggplot(r_df, aes(abs(rho), abs(r))) + 
+    geom_point() + 
+    geom_line(aes(abs(r), abs(r)), colour='red') + 
+    ylab("|r|") + 
+    xlab(expression(paste("|", rho, "|")))
+```
+
+Pearson's r and Spearman's &rho; are very close to each other in most cases. A value of r with a smaller magnitude compared to &rho; (below the red line in the plot above) may indicate a nonlinear relationship between the transformed variables.
+
+### Weakly correlated variables
+
+```{r}
+
 ```
 
 
