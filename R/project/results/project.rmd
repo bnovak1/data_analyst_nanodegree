@@ -1,7 +1,7 @@
 ---
 title: "Exploratory Data Analysis: White Wine Quality"
 author: "Brian Novak"
-date: "February 10, 2017"
+date: "February 10, 2019"
 output: html_document
 ---
 
@@ -45,10 +45,6 @@ histograms <- function(df, col, aesthetic, label, scale_factor=1) {
         xlab(label)
     grid.arrange(p1, p2, ncol=2)
     
-    ggplot(df, aesthetic) + 
-        geom_histogram(bins=nbins) + 
-        scale_x_log10() + 
-        xlab(label)
 }
 
 
@@ -134,7 +130,7 @@ nrow(subset(wine_quality_data, fixed.acidity > 10.0))
 
 ##### Acetic acid concentration (volatile acidity)
 
-The median acetic acid concentration is about 26 times less than the tartaric acid concentration, so its contribution to the acidity is relatively low. However, too much acetic acid may reduce a wine's quality rating since it will start to have a vinegar flavor. The acetic acid concentration has a much more pronounced tail on the right compared with tartaric acid. The values range over more than a factor of 10. The histogram with the log scale looks fairly symmetric.
+The median acetic acid concentration is about 26 times less than the tartaric acid concentration, so its contribution to the acidity is relatively low. However, too much acetic acid may reduce a wine's quality rating since it will start to have a vinegar flavor. The acetic acid concentration has a much more pronounced tail on the right compared with tartaric acid. The values range over more than a factor of 10.
 
 ```{r}
 histograms(wine_quality_data, 'volatile.acidity', aes(volatile.acidity),
@@ -144,7 +140,7 @@ normality_tests(wine_quality_data$volatile.acidity)
 
 ##### Citric acid concentration
 
-The citric acid concentrations are comparable to the acetic acid concentrations, but the tail on the right is even longer and there are apparently 19 wines with either no measurable citric acid or citric acid concentration was not measured for those wines. The histogram on the log scale does not look more symmetric than the original, but is instead left skewed.
+The citric acid concentrations are comparable to the acetic acid concentrations, but the tail on the right is even longer and there are apparently 19 wines with either no measurable citric acid or citric acid concentration was not measured for those wines.
 
 ```{r}
 histograms(wine_quality_data, 'citric.acid', aes(citric.acid),
@@ -225,7 +221,7 @@ normality_tests(wine_quality_data$total.sulfur.dioxide)
 
 #### Potassium sulphate
 
-The potassium sulfate concentration ranges from about 200 to 1100 mg/L and is approximately log normally distributed. The concentration is converted to mg/L for better comparison with the sulfur dioxide concentrations. The mean potassium sulfate concentration of 489.8 mg/L is several times larger than the mean free sulfur dioxide (35.31 mg/L) and mean total sulfur dioxide (138.4 mg/L) concentrations.
+The potassium sulfate concentration is converted to mg/L for better comparison with the sulfur dioxide concentrations and ranges from about 200 to 1100 mg/L.  The mean potassium sulfate concentration of 489.8 mg/L is several times larger than the mean free sulfur dioxide (35.31 mg/L) and mean total sulfur dioxide (138.4 mg/L) concentrations.
 ```{r}
 histograms(wine_quality_data, 'sulphates', aes(sulphates), 
            'Potassium sulfate concentration (milligrams/liter)', 1000)
@@ -248,7 +244,7 @@ nlow_pH
 ```
 
 ### Alcohol
-The distribution of alcohol content is right skewed, which is consistent with a lower bound. There is a minimum alcohol content required to call a drink wine. The distribution is not log normally distributed. The mean is about 10.5% and the max is 14.2%.
+The distribution of alcohol content is right skewed. The mean is about 10.5% and the max is 14.2%.
 
 ```{r}
 histograms(wine_quality_data, 'alcohol', aes(alcohol), 'Alcohol volume %')
@@ -282,7 +278,7 @@ This data set consists of quality scores for 4898 Portuguese white wines. Also i
 
 ## Distributions of variables and potential outliers
 
-None of the distributions or the distributions of logarithms of the variables are normal based on the Shapiro-Wilks test. However, the distributions of tartaric acid concentration, total sulfur dioxide concentration, and density appear to be approximately symmetric. After a log transformation, the distributions of acetic acid concentration, potassium sulfate, and pH appear to be approximately symmetric. Neither the untransformed or log transformed distributions for citric acid concentration, sugar concentration, chloride concentration, free sulfur dioxide concentration, or alcohol concentration appear to be symmetric. The sugar concentration distribution is multimodal. Transformations other than the logarithm were not tried.
+None of the distributions are normal based on the Shapiro-Wilks test. However, the distributions of tartaric acid concentration, total sulfur dioxide concentration, and density appear to be approximately symmetric. The sugar concentration distribution is multimodal.
 
 There are some outliers and atypical distributions which may be of concern and taken into account in later analysis. The density data appears to have a few outliers with unrealistically high densities which might need to discarded. There are 19 wines which have a reported citric acid concentration of zero. It is unlikely that the concentrations are actually zero. For some analysis, it might be better to exclude these wines. Only free sulfur dioxide concentrations above about 50 mg/L affect the smell and taste of a wine. Only 19% of the wines have free sulfur dioxide concentrations above this threshold. When considering correlation of free sulfur dioxide concentration with quality, it would be best to split the data into two groups, one below and one above the threshold concentration. The reason for the multimodal distribution of sugar concentration is not known. Perhaps this is related to different classes of wines with different typical sugar concentrations that are targets of producers. However, without other data there is not really much basis for segmenting the data based on sugar concentration during analysis. There is only one wine in the data set which is considered sweet (sugar concentration > 45 g/L), so this data set could not be used to build a model which would predict the quality of sweet wines. There are also a relatively large number of wines, 70, with pH values outside the typical range of 2.9-3.9. This could be a problem if trying to use only this data set to create a general model for predicting wine quality.
 
@@ -294,7 +290,7 @@ Cortez et al.[1] reported the importance of each measurment in determining the q
 
 # Two variables
 
-There are expected to be correlations between sulphate concentration, sulfur dioxide concentrations, and pH; and also between density, alcohol concentration, and sugar concentration. 
+There are expected to be correlations between sulphate concentration, sulfur dioxide concentrations, and pH; acid concentrations and pH; and also between density, alcohol concentration, and sugar concentration. 
 
 ## Remove outliers
 
@@ -304,7 +300,7 @@ Some potential outliers were noted in the single variable analysis. Here outlier
 wine_quality_data_no_outlier <- outliers(wine_quality_data)
 ```
 
-After running Rosner's test on each variable in the data frame once, 23 outliers were found. Since the outliers may affect the data transformation, multiple iterations are performed with the data input to the next iteration being the data with outliers removed from the previous iteration.
+After running Rosner's test on each variable in the data frame once, 23 outliers were found. Although some box plots show many points outside the whiskers, most of those points are still near the whiskers. Only the points far from the whiskers are determined to be outliers by Rosner's test. Since the outliers may affect the data transformation, multiple iterations are performed with the data input to the next iteration being the data with outliers removed from the previous iteration.
 
 ```{r}
 wine_quality_data_no_outlier <- outliers(wine_quality_data_no_outlier)
@@ -339,7 +335,7 @@ Pearson correlations and Spearman rank correlations are calculated using transfo
 wine_quality_data_trans <- transform_data(wine_quality_data_no_outlier)
 
 r <- round(cor(wine_quality_data_trans, method="pearson", use="pairwise.complete.obs"), 3)
-rho <- round(cor(wine_quality_data_trans, method="spearman", use="pairwise.complete.obs"), 3)
+rho <- round(cor(wine_quality_data_no_outlier, method="spearman", use="pairwise.complete.obs"), 3)
 
 ut <- upper.tri(r)
 r_df <- data.frame(
@@ -347,6 +343,7 @@ r_df <- data.frame(
     column = rownames(r)[col(r)[ut]],
     r = (r)[ut],
     rho = (rho)[ut])
+r_df['cor_max'] = sign(r_df['r'])*pmax(abs(r_df['r']), abs(r_df['rho']))
 ```
 
 ```{r}
@@ -362,10 +359,20 @@ Pearson's r and Spearman's &rho; are very close to each other in most cases. A v
 ### Weakly correlated variables
 
 ```{r}
-
+subset(r_df, abs(r_df['cor_max']) >= 0.1 & abs(r_df['cor_max']) < 0.3)
 ```
 
+### Moderately correlated variables
 
+```{r}
+subset(r_df, abs(r_df['cor_max']) >= 0.3 & abs(r_df['cor_max']) < 0.5)
+```
+
+### Strongly correlated variables
+
+```{r}
+subset(r_df, abs(r_df['cor_max']) >= 0.5)
+```
 # Multiple variables
 
 # Final Plots and Summary
