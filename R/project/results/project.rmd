@@ -1,7 +1,7 @@
 ---
 title: "Exploratory Data Analysis: White Wine Quality"
 author: "Brian Novak"
-date: "February 10, 2019"
+date: "February 27, 2019"
 output: html_document
 ---
 
@@ -11,6 +11,7 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 library(rcompanion)
+library(cowplot)
 suppressMessages(library(EnvStats))
 ```
 
@@ -267,7 +268,7 @@ Quality is restricted to integers between 0 and 10, so the histogram is plotted 
 ```{r}
 summary(wine_quality_data['quality'])
 
-qplot(data=wine_quality_data, x=quality, binwidth=1, xlab='Quality')
+qplot(data=wine_quality_data, x=quality, binwidth=1, xlab='Quality', ylab='Count')
 ```
 
 # Single variable summary
@@ -338,16 +339,16 @@ r <- round(cor(wine_quality_data_trans, method="pearson", use="pairwise.complete
 rho <- round(cor(wine_quality_data_no_outlier, method="spearman", use="pairwise.complete.obs"), 3)
 
 ut <- upper.tri(r)
-r_df <- data.frame(
+corr_df <- data.frame(
     row = rownames(r)[row(r)[ut]],
     column = rownames(r)[col(r)[ut]],
     r = (r)[ut],
     rho = (rho)[ut])
-r_df['cor_max'] = sign(r_df['r'])*pmax(abs(r_df['r']), abs(r_df['rho']))
+corr_df['cor_max'] = sign(corr_df['r'])*pmax(abs(corr_df['r']), abs(corr_df['rho']))
 ```
 
 ```{r}
-ggplot(r_df, aes(abs(rho), abs(r))) + 
+ggplot(corr_df, aes(abs(rho), abs(r))) + 
     geom_point() + 
     geom_line(aes(abs(r), abs(r)), colour='red') + 
     ylab("|r|") + 
@@ -359,19 +360,30 @@ Pearson's r and Spearman's &rho; are very close to each other in most cases. A v
 ### Weakly correlated variables
 
 ```{r}
-subset(r_df, abs(r_df['cor_max']) >= 0.1 & abs(r_df['cor_max']) < 0.3)
+corr_weak <- subset(corr_df, abs(corr_df['cor_max']) >= 0.1 & abs(corr_df['cor_max']) < 0.3)[, -which(names(corr_df) == "cor_max")]
+corr_weak
+```
+
+```{r}
+plot_pair = function (row)
+    ggplot(wine_quality_data_no_outlier, 
+           aes_string(toString(corr_weak[row,]$row), toString(corr_weak[row,]$column))) +
+        geom_point()
+
+myplots <- lapply(seq(1, 4), plot_pair)
+plot_grid(plotlist = myplots, ncol = 2)
 ```
 
 ### Moderately correlated variables
 
 ```{r}
-subset(r_df, abs(r_df['cor_max']) >= 0.3 & abs(r_df['cor_max']) < 0.5)
+subset(corr_df, abs(corr_df['cor_max']) >= 0.3 & abs(corr_df['cor_max']) < 0.5)[, -which(names(corr_df) == "cor_max")]
 ```
 
 ### Strongly correlated variables
 
 ```{r}
-subset(r_df, abs(r_df['cor_max']) >= 0.5)
+subset(corr_df, abs(corr_df['cor_max']) >= 0.5)[, -which(names(corr_df) == "cor_max")]
 ```
 # Multiple variables
 
