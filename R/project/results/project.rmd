@@ -101,6 +101,11 @@ outliers <- function(df) {
     
 }
 
+# Scatter plot of data from df using column names taken from a row of df_corr. Use with lapply for multiplt plots.
+plot_pair = function (row, df, df_corr)
+    ggplot(df, 
+           aes_string(toString(df_corr[row,]$row), toString(df_corr[row,]$column))) +
+        geom_point()
 ```
 
 ```{r}
@@ -363,28 +368,56 @@ Pearson's r and Spearman's &rho; are very close to each other in most cases. A v
 corr_weak <- subset(corr_df, abs(corr_df['cor_max']) >= 0.1 & abs(corr_df['cor_max']) < 0.3)[, -which(names(corr_df) == "cor_max")]
 corr_weak
 ```
-
 ```{r}
-plot_pair = function (row)
-    ggplot(wine_quality_data_no_outlier, 
-           aes_string(toString(corr_weak[row,]$row), toString(corr_weak[row,]$column))) +
-        geom_point()
+npairs <- length(corr_weak$row)
+npages <- ceiling(npairs/4)
 
-myplots <- lapply(seq(1, 4), plot_pair)
-plot_grid(plotlist = myplots, ncol = 2)
+for (ipage in seq(1, npages)) {
+    seq(4*(ipage-1) + 1, 4*ipage)
+    myplots <- lapply(seq(4*(ipage-1) + 1, min(4*ipage, npairs)), plot_pair, 
+                      wine_quality_data_no_outlier, corr_weak)
+    print(plot_grid(plotlist = myplots, ncol = 2))
+}
 ```
 
 ### Moderately correlated variables
 
 ```{r}
-subset(corr_df, abs(corr_df['cor_max']) >= 0.3 & abs(corr_df['cor_max']) < 0.5)[, -which(names(corr_df) == "cor_max")]
+corr_mod <- subset(corr_df, abs(corr_df['cor_max']) >= 0.3 & abs(corr_df['cor_max']) < 0.5)[, -which(names(corr_df) == "cor_max")]
+corr_mod
+```
+
+```{r}
+npairs <- length(corr_mod$row)
+npages <- ceiling(npairs/4)
+
+for (ipage in seq(1, npages)) {
+    seq(4*(ipage-1) + 1, 4*ipage)
+    myplots <- lapply(seq(4*(ipage-1) + 1, min(4*ipage, npairs)), plot_pair, 
+                      wine_quality_data_no_outlier, corr_mod)
+    print(plot_grid(plotlist = myplots, ncol = 2))
+}
 ```
 
 ### Strongly correlated variables
 
 ```{r}
-subset(corr_df, abs(corr_df['cor_max']) >= 0.5)[, -which(names(corr_df) == "cor_max")]
+corr_strong <- subset(corr_df, abs(corr_df['cor_max']) >= 0.5)[, -which(names(corr_df) == "cor_max")]
+corr_strong
 ```
+
+```{r}
+npairs <- length(corr_strong$row)
+npages <- ceiling(npairs/4)
+
+for (ipage in seq(1, npages)) {
+    seq(4*(ipage-1) + 1, 4*ipage)
+    myplots <- lapply(seq(4*(ipage-1) + 1, min(4*ipage, npairs)), plot_pair, 
+                      wine_quality_data_no_outlier, corr_strong)
+    print(plot_grid(plotlist = myplots, ncol = 2))
+}
+```
+
 # Multiple variables
 
 # Final Plots and Summary
