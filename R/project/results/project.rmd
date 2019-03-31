@@ -11,11 +11,10 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 library(rcompanion)
-library(cowplot)
 suppressMessages(library(EnvStats))
 ```
 
-```{r}
+```{r functions}
 # Choose number of histogram bins based on Doane criterion
 nbins_hist <- function(x) {
     
@@ -50,13 +49,8 @@ histograms <- function(df, col, aesthetic, label, scale_factor=1) {
 
 
 normality_tests <- function(data) {
-
     print('')
-    print('Shapiro-Wilks normality test p-values')
-    print('')
-    print(c('Data:', shapiro.test(data)$p.value))
-    print(c('Log of Data:', shapiro.test(log(data[data>0]))$p.value))
-
+    print(c('Shapiro-Wilks normality test p-value:', shapiro.test(data)$p.value))
 }
 
 
@@ -108,7 +102,7 @@ plot_pair = function (row, df, df_corr)
         geom_point()
 ```
 
-```{r}
+```{r read_data}
 wine_quality_data <- read.csv('../input/wineQualityWhites.csv')
 wine_quality_data$X <- NULL
 ```
@@ -123,13 +117,13 @@ For each of the 11 variables, a summary is output along with three histograms in
 
 The distribution of tartaric acid concentration is fairly symmetric, with only 7 wines having a high acidity with 10 grams/liter of tartaric acid or higher.
 
-```{r}
+```{r tartaric_hist}
 histograms(wine_quality_data, 'fixed.acidity', aes(fixed.acidity), 
            'Tartaric acid concentration (grams/liter)')
 normality_tests(wine_quality_data$fixed.acidity)
 ```
 
-```{r}
+```{r tartaric_high, include=FALSE}
 nrow(subset(wine_quality_data, fixed.acidity > 10.0))
 ```
 
@@ -138,7 +132,7 @@ nrow(subset(wine_quality_data, fixed.acidity > 10.0))
 
 The median acetic acid concentration is about 26 times less than the tartaric acid concentration, so its contribution to the acidity is relatively low. However, too much acetic acid may reduce a wine's quality rating since it will start to have a vinegar flavor. The acetic acid concentration has a much more pronounced tail on the right compared with tartaric acid. The values range over more than a factor of 10.
 
-```{r}
+```{r acetic_hist}
 histograms(wine_quality_data, 'volatile.acidity', aes(volatile.acidity),
            'Acetic acid concentration (grams/liter)')
 normality_tests(wine_quality_data$volatile.acidity)
@@ -148,13 +142,13 @@ normality_tests(wine_quality_data$volatile.acidity)
 
 The citric acid concentrations are comparable to the acetic acid concentrations, but the tail on the right is even longer and there are apparently 19 wines with either no measurable citric acid or citric acid concentration was not measured for those wines.
 
-```{r}
+```{r citric_hist}
 histograms(wine_quality_data, 'citric.acid', aes(citric.acid),
            'Citric acid concentration (grams/liter)')
 normality_tests(wine_quality_data$citric.acid)
 ```
 
-```{r}
+```{r citric_zero, include=FALSE}
 nrow(subset(wine_quality_data, citric.acid==0))
 ```
 
@@ -162,7 +156,7 @@ nrow(subset(wine_quality_data, citric.acid==0))
 
 The sugar concentration has several peaks. This cannot be seen using the Doane criterion for the number of bins, but is seen with 8 times more bins and is easily seen using a log scale with 4 times more bins. There is a large peak at a concentration of about 1.5 grams/liter and smaller peaks around 5, 8, and 14 grams/liter. Based on the variable description, wines with greater than 45 grams/liter of sugar are considered sweet. There is only 1 wine in this data set which would be considered to be sweet, therefore this data set would not be useful for building a model to predict the quality of sweet wines. Also of possible concern if trying to use any model built from this data set for prediction is that the variable description says that having a sugar concentration of less than 1 gram/liter is rare, but 77 or 1.57% of the wines in this data set have those concentrations. This seems like more than rare, but the term "rare" is subjective.
 
-```{r}
+```{r sugar_hist}
 histograms(wine_quality_data, 'residual.sugar', aes(residual.sugar), 
            'Sugar concentration (grams/liter)')
 
@@ -176,7 +170,7 @@ ggplot(data=wine_quality_data, aes(residual.sugar)) +
 normality_tests(wine_quality_data$residual.sugar)
 ```
 
-```{r}
+```{r sugar_extremes, include=FALSE}
 nrow(subset(wine_quality_data, residual.sugar>45))
 nrow(subset(wine_quality_data, residual.sugar<1))
 100*nrow(subset(wine_quality_data, residual.sugar<1))/nrow(wine_quality_data)
@@ -186,7 +180,7 @@ nrow(subset(wine_quality_data, residual.sugar<1))
 
 The chloride ions in wine are primarily due to sodium chloride, and most wines in this data set have a concentration of less than 0.1 grams/liter. However, the distribution has a very long tail, with concentrations as high as 0.346 grams/liter. All of the chloride concentrations are low. For comparison, fresh water generally has a concentration of around 0.1 grams/liter of sodium chloride (https://www.engineeringtoolbox.com/water-salinity-d_1251.html).
 
-```{r}
+```{r chloride_hist}
 histograms(wine_quality_data, 'chlorides', aes(chlorides), 
            'Chloride concentration (grams/liter)')
 normality_tests(wine_quality_data$chlorides)
@@ -198,13 +192,13 @@ normality_tests(wine_quality_data$chlorides)
 
 The data description says that free sulfur dioxide does not influence the smell or taste of wine until the concentration exceeds about 50 milligrams/liter. In this data set, 932 or about 19% of the wines have free sulfur dioxide concentrations above this threshold with the highest concentration being 289 milligrams/liter. This suggests that the correlation between free sulfur dioxide concentration and quality should be investigated on two subsets of the data with free sulfur dioxide concentrations above and below the threshold.
 
-```{r}
+```{r free_SO2_hist}
 histograms(wine_quality_data, 'free.sulfur.dioxide', aes(free.sulfur.dioxide), 
            'Free sulfur dioxide concentration (milligrams/liter)')
 normality_tests(wine_quality_data$free.sulfur.dioxide)
 ```
 
-```{r}
+```{r high_SO2, include=FALSE}
 nhigh_so2 <- nrow(subset(wine_quality_data, free.sulfur.dioxide >= 50))
 nhigh_so2
 100*nhigh_so2/nrow(wine_quality_data)
@@ -214,13 +208,13 @@ nhigh_so2
 
 The total sulfur dioxide concentration distribution has a similar shape to the free sulfur dioxide concentration distribution, but the mean is about 100 milligrams/liter higher than the mean for free sulfur dioxide concentration. This means that the majority of the sulfur dioxide is in the bound form; about 74% on average.
 
-```{r}
+```{r total_SO2_hist}
 histograms(wine_quality_data, 'total.sulfur.dioxide', aes(total.sulfur.dioxide), 
            'Total sulfur dioxide concentration (milligrams/liter)')
 normality_tests(wine_quality_data$total.sulfur.dioxide)
 ```
 
-```{r}
+```{r total_SO2_pcnt, include=FALSE}
 100*mean((wine_quality_data$total.sulfur.dioxide - wine_quality_data$free.sulfur.dioxide)/wine_quality_data$total.sulfur.dioxide)
 ```
 
@@ -228,7 +222,8 @@ normality_tests(wine_quality_data$total.sulfur.dioxide)
 #### Potassium sulphate
 
 The potassium sulfate concentration is converted to mg/L for better comparison with the sulfur dioxide concentrations and ranges from about 200 to 1100 mg/L.  The mean potassium sulfate concentration of 489.8 mg/L is several times larger than the mean free sulfur dioxide (35.31 mg/L) and mean total sulfur dioxide (138.4 mg/L) concentrations.
-```{r}
+
+```{r sulphate_hist}
 histograms(wine_quality_data, 'sulphates', aes(sulphates), 
            'Potassium sulfate concentration (milligrams/liter)', 1000)
 normality_tests(wine_quality_data$sulphates)
@@ -238,12 +233,12 @@ normality_tests(wine_quality_data$sulphates)
 
 The pH is approximately normally distributed with a mean of about 3.2. The Wikipedia article on acids in wine (https://en.wikipedia.org/wiki/Acids_in_wine) states that wine pH is usually between 2.9 and 3.9 so the distribution is reasonble. However, there are 70 (1.4%) wines with a pH between 2.7 and 2.9.
 
-```{r}
+```{r pH_hist}
 histograms(wine_quality_data, 'pH', aes(pH), 'pH')
 normality_tests(wine_quality_data$pH)
 ```
 
-```{r}
+```{r pH_low, include=FALSE}
 nlow_pH <- nrow(subset(wine_quality_data, pH < 2.9))
 nlow_pH
 100*nlow_pH/nrow(wine_quality_data)
@@ -252,7 +247,7 @@ nlow_pH
 ### Alcohol
 The distribution of alcohol content is right skewed. The mean is about 10.5% and the max is 14.2%.
 
-```{r}
+```{r alchohol_hist}
 histograms(wine_quality_data, 'alcohol', aes(alcohol), 'Alcohol volume %')
 normality_tests(wine_quality_data$alcohol)
 ```
@@ -261,7 +256,7 @@ normality_tests(wine_quality_data$alcohol)
 
 The densities are narrowly distributed and have a mean slightly less than the density of water which is expected since alcohol lowers the density. The distribution appears to be approximately normal, but there are some outliers with densities of around 1.01 and 1.04 g/cc. These measurements are suspect since they are significantly larger than other measurements and it is unlikely that the density of a wine is significantly higher than water.
 
-```{r}
+```{r density_hist}
 histograms(wine_quality_data, 'density', aes(density), 'Density (g/cc)')
 normality_tests(wine_quality_data$density)
 ```
@@ -270,7 +265,7 @@ normality_tests(wine_quality_data$density)
 
 Quality is restricted to integers between 0 and 10, so the histogram is plotted with a bin width of 1. The minimum quality is 3 and the maximum quality is 9. Both the median and the mode are 6.
 
-```{r}
+```{r quality_hist}
 summary(wine_quality_data['quality'])
 
 qplot(data=wine_quality_data, x=quality, binwidth=1, xlab='Quality', ylab='Count')
@@ -302,32 +297,32 @@ There are expected to be correlations between sulphate concentration, sulfur dio
 
 Some potential outliers were noted in the single variable analysis. Here outliers are identified by Rosner's test and changed to NA before looking at correlations between two variables. Rosner's test assumes the data are from a normal distribution, so first a transformation is done using Tukey's Ladder of Powers to make the data more normal. For variables with identified outliers, box plots of the transformed variables are created. For calculating correlations, the outliers are just blindly removed by replacing the values with NA. For creating a model, there should probably be a more careful consideration of whether or not values are really outliers.
 
-```{r}
+```{r outlier_removal_1}
 wine_quality_data_no_outlier <- outliers(wine_quality_data)
 ```
 
 After running Rosner's test on each variable in the data frame once, 23 outliers were found. Although some box plots show many points outside the whiskers, most of those points are still near the whiskers. Only the points far from the whiskers are determined to be outliers by Rosner's test. Since the outliers may affect the data transformation, multiple iterations are performed with the data input to the next iteration being the data with outliers removed from the previous iteration.
 
-```{r}
+```{r outlier_removal_2}
 wine_quality_data_no_outlier <- outliers(wine_quality_data_no_outlier)
 ```
 
 After the second iteration, 6 more outliers are identified.
 
 
-```{r}
+```{r outlier_removal_3}
 wine_quality_data_no_outlier <- outliers(wine_quality_data_no_outlier)
 ```
 
 After the third iteration, no more outliers are identified.
 
-```{r}
+```{r citric_zero_2, include=FALSE}
 sum(wine_quality_data_no_outlier[['citric.acid']] == 0, na.rm=TRUE)
 ```
 
 Rosner's test did not identify the 19 citric acid concentrations that are zero as outliers. Since it seems physically unrealistic to have a concentration of exactly zero, these points are also changed to NA for the purpose of calculating correlations.
 
-```{r}
+```{r citric_zero_removal, include=FALSE}
 ind <- wine_quality_data_no_outlier$citric.acid == 0
 wine_quality_data_no_outlier$citric.acid[ind] = NA
 sum(wine_quality_data_no_outlier[['citric.acid']] == 0, na.rm=TRUE)
@@ -337,7 +332,7 @@ sum(wine_quality_data_no_outlier[['citric.acid']] == 0, na.rm=TRUE)
 
 Pearson correlations and Spearman rank correlations are calculated using transformed data after removing outliers. Since the Pearson correlation assumes data is normally distributed, again the data is transformed using Tukey's ladder of powers. The correlations are split into groups with weakly correlated variables having correlation magnitudes between 0.1 and 0.3, moderately correlated variables having magnitudes between 0.3 and 0.5, and strongly correlated variables having magnitudes greater than 0.5. Pairs of variables with correlation magnitudes less than 0.1 are not looked at further.
 
-```{r}
+```{r correlation_calc}
 wine_quality_data_trans <- transform_data(wine_quality_data_no_outlier)
 
 r <- round(cor(wine_quality_data_trans, method="pearson", use="pairwise.complete.obs"), 3)
@@ -352,7 +347,7 @@ corr_df <- data.frame(
 corr_df['cor_max'] = sign(corr_df['r'])*pmax(abs(corr_df['r']), abs(corr_df['rho']))
 ```
 
-```{r}
+```{r r_rho_plot}
 ggplot(corr_df, aes(abs(rho), abs(r))) + 
     geom_point() + 
     geom_line(aes(abs(r), abs(r)), colour='red') + 
@@ -362,13 +357,19 @@ ggplot(corr_df, aes(abs(rho), abs(r))) +
 
 Pearson's r and Spearman's &rho; are very close to each other in most cases. A value of r with a smaller magnitude compared to &rho; (below the red line in the plot above) may indicate a nonlinear relationship between the transformed variables.
 
+```{r load_cowplot}
+library(cowplot)
+```
+
 ### Weakly correlated variables
 
-```{r}
+Correlations coefficients for weakly correlated pairs of variables are in the table below and scatter plots for each pair are below the table. Most of these are not that interesting. Due to the small correlations it is sometimes difficult to even visually determine the sign of the correlations from the scatter plots. Interesting correlations include a positive correlation between citric acid concentration and tartaric acid concentration (fixed.acidity), a negative correlation between citric acid concentration and acetic acid concentration (volatile.acidity), and a positive correlation between density and tartaric acid concentration. The reason for these correlations is not apparent.
+
+```{r weak_corr_table}
 corr_weak <- subset(corr_df, abs(corr_df['cor_max']) >= 0.1 & abs(corr_df['cor_max']) < 0.3)[, -which(names(corr_df) == "cor_max")]
 corr_weak
 ```
-```{r}
+```{r, weak_corr_scatter}
 npairs <- length(corr_weak$row)
 npages <- ceiling(npairs/4)
 
@@ -382,12 +383,15 @@ for (ipage in seq(1, npages)) {
 
 ### Moderately correlated variables
 
-```{r}
-corr_mod <- subset(corr_df, abs(corr_df['cor_max']) >= 0.3 & abs(corr_df['cor_max']) < 0.5)[, -which(names(corr_df) == "cor_max")]
+There are 10 pairs of variables which are moderately correlated. Tartaric acid concentration (fixed.acidity) is negatively correlated with pH which is expected. Sugar concentration (residual.sugar) is negatively correlated with alcohol concentration. This makes sense since sugar is consumed during fermentation and alcohol is a product of fermentation. Higher salt concentrations (chlorides) tends to negatively affect wine quality. Higher alcohol concentration leads to a higher quality score. Lower density leads to a higher quality score, but this is probably mostly due to the fact that density has a strong negative correlation with alcohol concentration (see next section). There are also moderate correlations between sulfur dioxide concentrations and sugar concentration, chloride concentration and total sulfur dioxide concentration, density and free sulfur dioxide concentration, and alcohol concentration and total sulfur dioxide concentration. The origin of these correlations is not clear. The scatter plot for chloride concentration and total sulfur dioxide concentration indicates that the it may be useful to split the data into chloride concentrations less than about 0.1 g/L and greater than about 0.1 g/L. For chloride concentrations greater than about 0.1 g/L, the correlation between chloride concentration and total sulfur dioxide concentration appears to be much lower than for chloride concentrations less than about 0.1 g/L.
+
+```{r moderate_corr_table}
+corr_mod <- subset(corr_df, abs(corr_df['cor_max']) >= 0.3 & 
+                       abs(corr_df['cor_max']) < 0.5)[, -which(names(corr_df) == "cor_max")]
 corr_mod
 ```
 
-```{r}
+```{r moderate_corr_scatter}
 npairs <- length(corr_mod$row)
 npages <- ceiling(npairs/4)
 
@@ -401,12 +405,14 @@ for (ipage in seq(1, npages)) {
 
 ### Strongly correlated variables
 
-```{r}
+There are 6 pairs of strongly correlated variables. The first is just the free and total sulfur dioxide concentrations which is expected. The sugar concentration (residual.sugar) is positively correlated with density. This may be partially due to the decreased alcohol concentration with higher sugar concentrations leading to higher densities. Increasing chloride concentration increases density as expected. Looking at the scatter plot for density and chloride concentration again shows that something may be wrong with the high chloride concentration data. For chloride concentrations greater than about 0.1 g/L, the correlation with density is much weaker. Density is positively correlated with total sulfur dioxide concentration. The reason for this is not obvious, but is likely related to the fact that most of the free sulfur dioxide is in the form of bisulfite ion (HSO<sub>3</sub><sup>-</sup>) and not SO<sub>2</sub> gas. Alcohol concentration is negatively correlated with chloride concentration, perhaps because higher salt concentrations inhibit fermentation leading to lower alcohol concentration. Finally, density is negatively correlated with alcohol concentration which is expected.
+
+```{r strong_corr_table}
 corr_strong <- subset(corr_df, abs(corr_df['cor_max']) >= 0.5)[, -which(names(corr_df) == "cor_max")]
 corr_strong
 ```
 
-```{r}
+```{r strong_corr_scatter}
 npairs <- length(corr_strong$row)
 npages <- ceiling(npairs/4)
 
