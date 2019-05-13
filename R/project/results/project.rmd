@@ -424,6 +424,52 @@ for (ipage in seq(1, npages)) {
 }
 ```
 
+### Splitting free SO<sub>2</sub> concentration into two groups
+
+Free SO<sub>2</sub> concentrations above about 50 mg/L are supposed to affect the smell and taste of the wine. Therefore, it is expected that the correlation of free SO<sub>2</sub> concentration with quality will be different for concentrations above 50 mg/L compared to concentrations less than 50 mg/L.
+
+```{r split_free_SO2}
+df_lower <- transform_data(subset(wine_quality_data_no_outlier, free.sulfur.dioxide < 50))
+df_upper <- transform_data(subset(wine_quality_data_no_outlier, free.sulfur.dioxide > 50))
+
+cor_low_SO2 <- cor(df_lower$free.sulfur.dioxide, df_lower$quality, 
+                   method='pearson', use="pairwise.complete.obs")
+cor_high_SO2 <- cor(df_upper$free.sulfur.dioxide, df_upper$quality, 
+                    method='pearson', use="pairwise.complete.obs")
+
+cat("Pearson's r for free SO2 concentration < 50 mg/L, quality:", cor_low_SO2, "\n")
+cat("Pearson's r for free SO2 concentration > 50 mg/L, quality:", cor_high_SO2)
+
+p1 <- ggplot(df_lower, aes(free.sulfur.dioxide, quality)) + 
+    geom_point() + 
+    xlab("free.sulfur.dioxide") + ylab("quality")
+p2 <- ggplot(df_upper, aes(free.sulfur.dioxide, quality)) + 
+    geom_point() + 
+    xlab("free.sulfur.dioxide") + ylab("quality")
+grid.arrange(p1, p2, ncol=2)
+```
+
+The correlation for free SO<sub>2</sub> concentrations less than 50 mg/L is weak, but significant. It is positive which is expected since it is a preservative. It may negatively impact the quality at high concentrations leading to a negative correlation coefficient. However, for this data the correlation coefficient is insignificant for free SO<sub>2</sub> concentrations greater than 50 mg/L.
+
+
+### Splitting chloride concentration into two groups
+
+Previous scatter plots clearly show that the correlations between chloride concentration and other variables are different when chloride concentration is above about 0.08 g/L. This corresponds to the very long tail in the histogram.
+
+```{r split_chloride}
+df_lower <- transform_data(subset(wine_quality_data_no_outlier, chlorides < 0.08))
+df_upper <- transform_data(subset(wine_quality_data_no_outlier, chlorides > 0.08))
+
+r_chlorides <- rbind(round(cor(df_lower$chlorides, subset(df_lower, select=-chlorides), 
+                               method="pearson", use="pairwise.complete.obs"), 3), 
+                     round(cor(df_upper$chlorides, subset(df_upper, select=-chlorides), 
+                               method="pearson", use="pairwise.complete.obs"), 3))
+row.names(r_chlorides) <- c("< 0.08 g/L", ">0.08 g/L")
+r_chlorides
+```
+
+The correlations are very different for low and high chloride concentrations for tartaric acid, citric acid, sugar, total sulfur dioxide, density, sulphates, alcohol, and quality. The sign of the correlation changes for tartaric acid, sugar, density, alcohol, and quality. This behavior indicates that either high chloride concentrations actually do change the correlations dramatically, or there is something wrong with the high chloride data. It would be interesting to know more about the data, such as details about where the wines come from geographically and when and where measurements were made. That might reveal the source of this behavior for high chloride concentrations.
+
 # Multiple variables
 
 # Final Plots and Summary
