@@ -1,7 +1,7 @@
 ---
 title: "Exploratory Data Analysis: White Wine Quality"
 author: "Brian Novak"
-date: "February 27, 2019"
+date: "June 24, 2019"
 output: html_document
 ---
 
@@ -12,7 +12,10 @@ library(grid)
 library(gridExtra)
 library(rcompanion)
 suppressMessages(library(EnvStats))
+library(reticulate)
+library(car)
 ```
+
 
 ```{r functions}
 # Choose number of histogram bins based on Doane criterion
@@ -271,7 +274,7 @@ summary(wine_quality_data['quality'])
 qplot(data=wine_quality_data, x=quality, binwidth=1, xlab='Quality', ylab='Count')
 ```
 
-# Single variable summary
+# Single variable analysis
 
 ## Data structure
 
@@ -289,7 +292,7 @@ Cortez et al.[1] reported the importance of each measurment in determining the q
 
 [1] Cortez, P.; Cerdeira, A.; Almeida, F.; Matos, T.; Reis, J. Modeling Wine Preferences by Data Mining from Physicochemical Properties. Decision Support Systems 2009, 47 (4), 547-553. https://doi.org/10.1016/j.dss.2009.05.016.
 
-# Two variables
+# Two variable analysis
 
 There are expected to be correlations between sulphate concentration, sulfur dioxide concentrations, and pH; acid concentrations and pH; and also between density, alcohol concentration, and sugar concentration. 
 
@@ -471,6 +474,80 @@ r_chlorides
 The correlations are very different for low and high chloride concentrations for tartaric acid, citric acid, sugar, total sulfur dioxide, density, sulphates, alcohol, and quality. The sign of the correlation changes for tartaric acid, sugar, density, alcohol, and quality. This behavior indicates that either high chloride concentrations actually do change the correlations dramatically, or there is something wrong with the high chloride data. It would be interesting to know more about the data, such as details about where the wines come from geographically and when and where measurements were made. That might reveal the source of this behavior for high chloride concentrations.
 
 # Multiple variables
+
+The most obvious relationship involving multiple variables in this data set is between the acid concentrations (tartaric acid, citric acid, and acetic acid) and pH. If all the acid and base concentrations were measured and the acid dissociation constants in wine were known, then the pH could be computed from the acid concentrations and acid dissociation constants. Comparing the computed pH values to the reported ones would provide a check on the data. However, there are likely other acids and bases whose concentrations are significant, the acid dissociation constants may be shifted in wine relative to water, and the acids may have interactions with other compounds in wine (tartrates for example). These factors make computing an accurate pH difficult, but approximate pH values can still be calculated to see if the deviations from the reported pH values are much larger for some points. To do the pH calculations, the reticulate R package is used with the pHcalc python package.
+
+```{python pH}
+import numpy as np
+import pandas as pd
+from pHcalc.pHcalc import Acid, Neutral, System
+
+# Define acids
+def acetic(conc_):
+    return Acid(pKa=[4.756], charge=0, conc=conc_)
+    
+def tartaric(conc_):
+    return Acid(pKa=[2.98, 4.34], charge=0, conc=conc_)
+    
+def citric(conc_):
+    return Acid(pKa=[3.13077, 4.76955, 6.39794], charge=0, conc=conc_)
+    
+# Concentrations in moles/L, divide g/L by molecular weight (g/mole)
+MOLARITY = pd.DataFrame({'tartaric acid': r.wine_quality_data['fixed.acidity']/150.09,
+                         'acetic acid': r.wine_quality_data['volatile.acidity']/60.052, 
+                         'citric acid': r.wine_quality_data['citric.acid']/192.12})
+NCONCS = MOLARITY.shape[0]
+
+# Compute pH values
+PH_CALCULATED = np.zeros(NCONCS)
+for iconc in range(NCONCS):
+    system = System(tartaric(MOLARITY['tartaric acid'].iloc[iconc]),
+                    acetic(MOLARITY['acetic acid'].iloc[iconc]),
+                    citric(MOLARITY['citric acid'].iloc[iconc]))
+    system.pHsolve()
+    PH_CALCULATED[iconc] = system.pH
+
+PH = pd.DataFrame({'pH': r.wine_quality_data['pH'], 'pH.calc': PH_CALCULATED})
+```
+
+Plotting calculated pH versus measured pH shows that they are not that close and the calculated pH is not even very useful for predicting the measured pH since the correlation coefficient is only 0.44. The plot does show that there may be one outlier; the point with the lowest calculated pH.
+
+```{r pH_compare}
+ggplot(py$PH, aes(pH, pH.calc)) + 
+    geom_point() + 
+    ylab("calculated pH") + 
+    xlab("measured pH")
+cat("Pearson's r:", cor(transform_data(py$PH['pH']), transform_data(py$PH['pH.calc'])), '\n')
+```
+
+The tartaric acid concentration for the point with the lowest calculated pH was previously identified as an outlier. The pH plot provides more evidence that it is an outlier.
+
+```{r pH_outlier}
+ind <- which(py$PH['pH.calc'] == min(py$PH['pH.calc']))
+subset(wine_quality_data_no_outlier[ind, ], 
+       select = c("fixed.acidity", "volatile.acidity", "citric.acid", "pH"))
+```
+
+
+There are obviously misleading correlations between some measurements and quality. The most important one is density which may appear to affect quality, but this does not make sense since the wine tasters are surely not sensitive to such small changes in density. The correlation between density and quality appears because alcohol concentration is correlated with both density and quality. Alcohol is expected to affect quality. Multicollinearity can be investigated using the variance inflation factor method or the perturb method. Assuming a linear model relating the transformed quality to the transformed measurements, the variance inflation factors can be calculated. Residual sugar, alcohol, and density have high variance inflation factors indicating multicollinearity between them.
+
+```{r}
+fit <- lm(quality~fixed.acidity+volatile.acidity+citric.acid+residual.sugar+chlorides+
+              free.sulfur.dioxide+total.sulfur.dioxide+density+pH+sulphates+alcohol,
+          data=wine_quality_data_trans)
+vif(fit)
+```
+
+If density is removed from the model, then all of the variance inflation factors are small.
+
+```{r}
+fit <- lm(quality~fixed.acidity+volatile.acidity+citric.acid+residual.sugar+chlorides+
+              free.sulfur.dioxide+total.sulfur.dioxide+pH+sulphates+alcohol,
+          data=wine_quality_data_trans)
+vif(fit)
+```
+
+The relationship between alcohol concentration, density, and quality can be illustrated by binning alcohol concentration, subtracting the average density in each bin from the densities in that bin, then plotting all of these corrected densities versus quality. This mostly removes the effect of alcohol concentration on density and as the plot below shows, also removes the effect of density on quality.
 
 # Final Plots and Summary
 
